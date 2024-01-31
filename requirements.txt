@@ -5,3 +5,4 @@ langchain-openai==0.0.5
 google-generativeai==0.3.2
 pandas==1.5.3
 faiss-gpu==1.7.2
+python-dotenv
