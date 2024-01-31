@@ -1,6 +1,9 @@
 from dotenv import load_dotenv
 import google.generativeai as genai
 import pandas as pd
+import requests
+import tempfile
+import os
 from InstructorEmbedding import INSTRUCTOR
 from langchain.document_loaders.csv_loader import CSVLoader
 from langchain.embeddings import HuggingFaceInstructEmbeddings
@@ -31,10 +34,39 @@ def create_vector_db():
     data = loader.load()
     vectordb = FAISS.from_documents(documents=data, embedding = instructor_embeddings)
     vectordb.save_local(vector_db_file_path)
+def download_faiss_index(github_raw_url, local_file_path):
+    response = requests.get(github_raw_url)
+    if response.status_code == 200:
+        with open(local_file_path, 'wb') as file:
+            file.write(response.content)
+    else:
+        raise Exception("Failed to download FAISS index from GitHub")
+
+# Define the folder name where you want to store the downloaded files
+folder_name = "downloaded_files"
+
+# Create the full path to the folder in the current working directory
+download_folder_path = os.path.join(os.getcwd(), folder_name)
+
+# Create the folder if it doesn't exist
+os.makedirs(download_folder_path, exist_ok=True)
+
+# URL of the raw FAISS index file in your GitHub repository
+github_raw_faiss = "https://github.com/hritvikgupta/Hritvik-LLM-Repo/raw/main/my_index.faiss/index.faiss"
+github_raw_pkl = "https://github.com/hritvikgupta/Hritvik-LLM-Repo/raw/main/my_index.faiss/index.pkl"
+
+# Create paths for the downloaded files inside the folder
+faiss_index_file_path = os.path.join(download_folder_path, "index.faiss")
+pkl_index_file_path = os.path.join(download_folder_path, "index.pkl")
+
+# Download and save the FAISS index files
+download_faiss_index(github_raw_faiss, faiss_index_file_path)
+download_faiss_index(github_raw_pkl, pkl_index_file_path)
+
 
 def get_qa_chain():
     # Load the vector database from the local folder
-    vectordb = FAISS.load_local(vector_db_file_path, instructor_embeddings)
+    vectordb = FAISS.load_local(download_folder_path, instructor_embeddings)
 
     # Create a retriever for querying the vector database
     retriever = vectordb.as_retriever(score_threshold=0.7)
